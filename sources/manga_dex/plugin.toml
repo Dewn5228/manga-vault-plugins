@@ -1,6 +1,6 @@
-id = "novelfire"
+id = "manga_dex"
 version = "1.0.0"
 backend = "wasm"
-entrypoint = "novelfire.wasm"
+entrypoint = "manga_dex.wasm"
 plugin_api = "1"
 capabilities = []

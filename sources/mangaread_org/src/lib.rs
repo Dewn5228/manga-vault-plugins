@@ -9,7 +9,7 @@ use exports::manga_vault::source::source::{
 use manga_vault::source::types::{Chapter, WorkKind};
 use manga_vault::source::{flare_solverr, html, http};
 
-const BASE: &str = "https://www.harimanga.co.uk";
+const BASE: &str = "https://www.mangaread.org";
 const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 fn http_get(url: &str) -> Result<String, SourceError> {
@@ -46,13 +46,13 @@ fn listing(path_and_query: String) -> Result<Vec<WorkSummary>, SourceError> {
 	Ok(parse_items(&body))
 }
 
-struct HariManga;
+struct MangareadOrg;
 
-impl Guest for HariManga {
+impl Guest for MangareadOrg {
 	fn get_info() -> SourceInfo {
 		SourceInfo {
-			id: "hari_manga".to_string(),
-			name: "HariManga".to_string(),
+			id: "mangaread_org".to_string(),
+			name: "MangaRead".to_string(),
 			version: "1.0.0".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
@@ -76,7 +76,7 @@ impl Guest for HariManga {
 			return Ok(vec![]);
 		}
 		listing(format!(
-			"{BASE}/home/page/{page}?orderby=latest&post_type=wp-manga"
+			"{BASE}/manga/?m_orderby=latest&paged={page}"
 		))
 	}
 
@@ -85,7 +85,7 @@ impl Guest for HariManga {
 			return Ok(vec![]);
 		}
 		listing(format!(
-			"{BASE}/home/page/{page}?orderby=trending&post_type=wp-manga"
+			"{BASE}/manga/?m_orderby=views&paged={page}"
 		))
 	}
 
@@ -97,7 +97,7 @@ impl Guest for HariManga {
 			.unwrap_or_else(|| url.to_string());
 
 		let mut authors = Vec::new();
-		for element in html::find(&body, "a[href*='/author']") {
+		for element in html::find(&body, ".author-content a") {
 			let author = html::text(&element);
 			if !author.is_empty() && !authors.contains(&author) {
 				authors.push(author);
@@ -137,10 +137,26 @@ impl Guest for HariManga {
 			})
 			.map(|src| if src.starts_with("http") { src } else { format!("https:{src}") });
 
-		let slug = url.trim_end_matches('/').rsplit('/').next().unwrap_or_default().to_string();
-		let mut chapters = chapters_from_api(&format!(
-			"{BASE}/api/comics/{slug}/chapters",
-		), url.trim_end_matches('/'));
+		let mut chapters = Vec::new();
+		for element in html::find(&body, "li.wp-manga-chapter a") {
+			let Some(href) = html::attr(&element, "href") else {
+				continue;
+			};
+			let title = html::text(&element);
+			if title.is_empty() {
+				continue;
+			}
+			chapters.push(Chapter {
+				title,
+				url: if href.starts_with("http") {
+					href
+				} else {
+					format!("{BASE}{href}")
+				},
+				date: None,
+				scanlation_group: None,
+			});
+		}
 		chapters.reverse();
 
 		Ok(WorkDetails {
@@ -179,15 +195,22 @@ impl Guest for HariManga {
 	}
 }
 
+fn is_work_href(href: &str) -> bool {
+	let Some(rest) = href.split("/manga/").nth(1) else {
+		return false;
+	};
+	let slug = rest.split('?').next().unwrap_or_default().trim_end_matches('/');
+	!slug.is_empty()
+		&& !slug.contains('/')
+		&& slug != "feed"
+		&& !rest.contains("/chapter-")
+}
+
 fn parse_items(body: &str) -> Vec<WorkSummary> {
 	let mut works: Vec<WorkSummary> = Vec::new();
 	for element in html::find(body, "a[href*='/manga/']") {
 		let href = match html::attr(&element, "href") {
-			Some(href)
-				if href.contains("/manga/") && !href.contains("/chapter-") =>
-			{
-				href
-			}
+			Some(href) if is_work_href(&href) => href,
 			_ => continue,
 		};
 		let title = match html::attr(&element, "title") {
@@ -222,44 +245,4 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 	works
 }
 
-fn chapters_from_api(api_url: &str, work_url: &str) -> Vec<Chapter> {
-	let body = match http_get(api_url) {
-		Ok(body) => body,
-		Err(_) => return Vec::new(),
-	};
-	let Some(start_index) = body.find("\"chapters\":") else {
-		return Vec::new();
-	};
-	let array_start = start_index + body[start_index..].find('[').unwrap_or(0);
-	let Some(close_rel) = body[array_start..].rfind(']') else {
-		return Vec::new();
-	};
-	let array = &body[array_start + 1..array_start + close_rel];
-
-	let mut chapters = Vec::new();
-	for object in array.split("},{") {
-		let Some(name) = extract_string_field(object, "chapter_name") else {
-			continue;
-		};
-		let Some(slug) = extract_string_field(object, "chapter_slug") else {
-			continue;
-		};
-		chapters.push(Chapter {
-			title: name,
-			url: format!("{work_url}/{slug}"),
-			date: None,
-			scanlation_group: None,
-		});
-	}
-	chapters
-}
-
-fn extract_string_field(text: &str, field: &str) -> Option<String> {
-	let key = format!("\"{field}\":\"");
-	let start = text.find(&key)? + key.len();
-	let rest = &text[start..];
-	let end = rest.find('"')?;
-	Some(rest[..end].to_string())
-}
-
-export!(HariManga);
+export!(MangareadOrg);

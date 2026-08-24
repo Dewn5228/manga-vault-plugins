@@ -1,0 +1,59 @@
+name: publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sources/**"
+      - "wit/**"
+      - "pack/**"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip2
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pack
+
+      - name: Build packer
+        run: cargo build --release
+        working-directory: pack
+
+      - name: Pack plugins and generate repo.json
+        run: ./pack/target/release/pack .
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create latest --repo "$GITHUB_REPOSITORY" --title "latest" --notes "Rolling artifact release; repo.json is the index."
+          gh release upload latest dist/*.mvplug --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Commit repo.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add dist/repo.json
+          if git diff --cached --quiet; then
+            echo "repo.json unchanged"
+          else
+            git commit -m "chore: update dist/repo.json"
+            git push
+          fi

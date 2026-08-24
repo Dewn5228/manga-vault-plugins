@@ -1,1 +1,2 @@
-target/
+dist/*.mvplug
+pack/target

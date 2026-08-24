@@ -1,6 +1,6 @@
-id = "novelfire"
+id = "mangaread_org"
 version = "1.0.0"
 backend = "wasm"
-entrypoint = "novelfire.wasm"
+entrypoint = "mangaread_org.wasm"
 plugin_api = "1"
 capabilities = []
