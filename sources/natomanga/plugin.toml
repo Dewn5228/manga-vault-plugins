@@ -1,0 +1,6 @@
+id = "natomanga"
+backend = "wasm"
+entrypoint = "natomanga.wasm"
+plugin_api = "1"
+capabilities = []
+legacy_urls = ["mangabat.com", "www.mangabat.com", "readmng.com"]

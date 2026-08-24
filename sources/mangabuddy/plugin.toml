@@ -1,0 +1,6 @@
+id = "mangabuddy"
+backend = "wasm"
+entrypoint = "mangabuddy.wasm"
+plugin_api = "1"
+capabilities = []
+legacy_urls = ["mangabuddy.com", "www.mangabuddy.com", "mangak.io", "www.mangak.io"]

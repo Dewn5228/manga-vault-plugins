@@ -1,0 +1,6 @@
+id = "hari_manga"
+backend = "wasm"
+entrypoint = "hari_manga.wasm"
+plugin_api = "1"
+capabilities = []
+legacy_urls = ["harimanga.com", "www.harimanga.com", "harimanga.co.uk"]

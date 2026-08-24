@@ -1,0 +1,6 @@
+id = "mangakakalot"
+backend = "wasm"
+entrypoint = "mangakakalot.wasm"
+plugin_api = "1"
+capabilities = []
+legacy_urls = ["mangakakalot.com", "www.mangakakalot.com"]

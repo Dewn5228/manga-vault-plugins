@@ -1,0 +1,5 @@
+id = "novelphoenix"
+backend = "wasm"
+entrypoint = "novelphoenix.wasm"
+plugin_api = "1"
+capabilities = []

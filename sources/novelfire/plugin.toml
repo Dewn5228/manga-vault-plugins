@@ -1,0 +1,5 @@
+id = "novelfire"
+backend = "wasm"
+entrypoint = "novelfire.wasm"
+plugin_api = "1"
+capabilities = []

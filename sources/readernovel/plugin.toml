@@ -1,0 +1,5 @@
+id = "readernovel"
+backend = "wasm"
+entrypoint = "readernovel.wasm"
+plugin_api = "1"
+capabilities = []
