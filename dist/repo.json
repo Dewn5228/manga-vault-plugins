@@ -1,0 +1,96 @@
+{
+  "name": "manga-vault-community",
+  "plugins": [
+    {
+      "backend": "wasm",
+      "id": "freewebnovel",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "d6258c57bd62ae7feee195b89ae9042e7edad8f1815cb484b04b66859bb9bf30",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/freewebnovel-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "hari_manga",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "a7acb7a086611402037f0bb6d8c10b481352d43b0dd1209f3e5d8b2b010d8c1b",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/hari_manga-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "manga_dex",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "77583f1c60079033a55fe2177a06ab4bfe7de5db62bc0b4d0dbfbc6cdf840034",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/manga_dex-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "mangabuddy",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "e4772a2fa122f01319a316ecf07077d0e6f5b81bdc85bf244a24d9419d593b3c",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "mangakakalot",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "309ffb35bfe7d769a1427d9b872e623ccb29c42bacfd4154936d856d59275716",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangakakalot-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "mangaread_org",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "edea4a12d4d49ed70db29236e15ec60152799153701d41e60585d28a2626ec1f",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangaread_org-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "natomanga",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "2bd9f32f742b6082b9c84ec03f2f125ed00cd8644ca8f6286daaa666a4d4c465",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/natomanga-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "novelfire",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "f148dc545f2a155b9b3ce6b5e57b96f589106509f73342b39498be86ce554c3f",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/novelfire-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "novelphoenix",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "125c5f5c99d3c1e7f0dfd3d068eb29165fa9f2b2016fba80ddd48ce3104070cd",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/novelphoenix-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "readernovel",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "fc125fad520e660a09f186455ff15640188f85a86cb1c838e7f8b22f42b8c17b",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/readernovel-1.0.0.mvplug",
+      "version": "1.0.0"
+    }
+  ],
+  "updated_at": "2026-08-25T12:43:37.106173508+00:00"
+}
