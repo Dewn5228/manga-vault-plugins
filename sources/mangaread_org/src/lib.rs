@@ -3,19 +3,24 @@ wit_bindgen::generate!({
 	world: "source-world",
 });
 
-use exports::manga_vault::source::source::{
-	Guest, SourceError, SourceInfo, WorkDetails, WorkSummary,
-};
+use exports::manga_vault::source::source::{Guest, SourceError, SourceInfo, WorkDetails, WorkSummary};
 use manga_vault::source::types::{Chapter, WorkKind};
 use manga_vault::source::{flare_solverr, html, http};
 
 const BASE: &str = "https://www.mangaread.org";
-const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+const UA: &str =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
-		http::Header { name: "Referer".to_string(), value: format!("{BASE}/") },
-		http::Header { name: "User-Agent".to_string(), value: UA.to_string() },
+		http::Header {
+			name: "Referer".to_string(),
+			value: format!("{BASE}/"),
+		},
+		http::Header {
+			name: "User-Agent".to_string(),
+			value: UA.to_string(),
+		},
 	];
 
 	let response = http::get(url, Some(&headers)).map_err(|error| SourceError::Network(error))?;
@@ -24,11 +29,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 		return Err(SourceError::Network("empty response".into()));
 	};
 
-	if http::has_cloudflare_protection(
-		&response.body,
-		Some(response.status),
-		Some(&response.headers),
-	) {
+	if http::has_cloudflare_protection(&response.body, Some(response.status), Some(&response.headers)) {
 		if let Some(solved) = flare_solverr::get(url, None).map_err(|e| SourceError::Network(e))? {
 			return Ok(solved.body);
 		}
@@ -53,7 +54,7 @@ impl Guest for MangareadOrg {
 		SourceInfo {
 			id: "mangaread_org".to_string(),
 			name: "MangaRead".to_string(),
-			version: "1.0.0".to_string(),
+			version: "1.0.1".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -65,28 +66,21 @@ impl Guest for MangareadOrg {
 		if page > 1 {
 			return Ok(vec![]);
 		}
-		listing(format!(
-			"{BASE}/?s={}&post_type=wp-manga",
-			urlencoding::encode(&query)
-		))
+		listing(format!("{BASE}/?s={}&post_type=wp-manga", urlencoding::encode(&query)))
 	}
 
 	fn latest(page: u32) -> Result<Vec<WorkSummary>, SourceError> {
 		if page > 100 {
 			return Ok(vec![]);
 		}
-		listing(format!(
-			"{BASE}/manga/?m_orderby=latest&paged={page}"
-		))
+		listing(format!("{BASE}/manga/?m_orderby=latest&paged={page}"))
 	}
 
 	fn trending(page: u32) -> Result<Vec<WorkSummary>, SourceError> {
 		if page > 20 {
 			return Ok(vec![]);
 		}
-		listing(format!(
-			"{BASE}/manga/?m_orderby=views&paged={page}"
-		))
+		listing(format!("{BASE}/manga/?m_orderby=views&paged={page}"))
 	}
 
 	fn fetch_work(url: String) -> Result<WorkDetails, SourceError> {
@@ -132,10 +126,8 @@ impl Guest for MangareadOrg {
 		}
 
 		let cover_url = html::find_one(&body, ".summary_image img")
-			.and_then(|element| {
-				html::attr(&element, "data-src").or_else(|| html::attr(&element, "src"))
-			})
-			.map(|src| if src.starts_with("http") { src } else { format!("https:{src}") });
+			.and_then(|element| html::attr(&element, "data-src").or_else(|| html::attr(&element, "src")))
+			.and_then(|src| normalize_image_url(&src));
 
 		let mut chapters = Vec::new();
 		for element in html::find(&body, "li.wp-manga-chapter a") {
@@ -184,8 +176,10 @@ impl Guest for MangareadOrg {
 				.unwrap_or_default()
 				.trim()
 				.to_string();
-			if src.starts_with("http") && !images.contains(&src) {
-				images.push(src);
+			if let Some(src) = normalize_image_url(&src) {
+				if !images.contains(&src) {
+					images.push(src);
+				}
 			}
 		}
 		if images.is_empty() {
@@ -200,10 +194,7 @@ fn is_work_href(href: &str) -> bool {
 		return false;
 	};
 	let slug = rest.split('?').next().unwrap_or_default().trim_end_matches('/');
-	!slug.is_empty()
-		&& !slug.contains('/')
-		&& slug != "feed"
-		&& !rest.contains("/chapter-")
+	!slug.is_empty() && !slug.contains('/') && slug != "feed" && !rest.contains("/chapter-")
 }
 
 fn parse_items(body: &str) -> Vec<WorkSummary> {
@@ -225,24 +216,72 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 		} else {
 			format!("{BASE}{href}")
 		};
-		let title = title
-			.split(" on Hari")
-			.next()
-			.unwrap_or(&title)
-			.replace("Read ", "")
-			.replace(" Manga Online", "")
-			.trim()
-			.to_string();
-		if title.is_empty() || works.iter().any(|work| work.url == url) {
+		let title = clean_title(&title);
+		let cover_url = html::find_one(&element.html, "img")
+			.and_then(|image| html::attr(&image, "data-src").or_else(|| html::attr(&image, "src")))
+			.and_then(|src| normalize_image_url(&src));
+		if title.is_empty() {
 			continue;
 		}
-		works.push(WorkSummary {
-			title,
-			url,
-			cover_url: None,
-		});
+		if let Some(work) = works.iter_mut().find(|work| work.url == url) {
+			if is_placeholder_title(&work.title) && !is_placeholder_title(&title) {
+				work.title = title;
+			}
+			if work.cover_url.is_none() {
+				work.cover_url = cover_url;
+			}
+		} else {
+			works.push(WorkSummary { title, url, cover_url });
+		}
 	}
+	works.retain(|work| !is_placeholder_title(&work.title));
 	works
+}
+
+fn is_placeholder_title(title: &str) -> bool {
+	matches!(title.trim().to_ascii_lowercase().as_str(), "read" | "read manga" | "manga")
+}
+
+fn clean_title(raw: &str) -> String {
+	let title = raw.split(" on Hari").next().unwrap_or(raw).trim();
+	let title = title.strip_prefix("Read ").unwrap_or(title);
+	title.strip_suffix(" Manga Online").unwrap_or(title).trim().to_string()
+}
+
+fn normalize_image_url(raw: &str) -> Option<String> {
+	let raw = raw.trim();
+	if raw.is_empty() {
+		return None;
+	}
+	let url = if raw.starts_with("//") {
+		format!("https:{raw}")
+	} else if raw.starts_with('/') {
+		format!("{BASE}{raw}")
+	} else {
+		raw.to_string()
+	};
+	let authority_start = url.find("://")? + 3;
+	let path_start = url[authority_start..].find('/').map(|offset| authority_start + offset)?;
+	let (authority, path) = url.split_at(path_start);
+	Some(format!("{authority}/{}", path.trim_start_matches('/')))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn normalizes_image_urls() {
+		assert_eq!(
+			normalize_image_url("https://cdn.example.test//thumb/a.webp"),
+			Some("https://cdn.example.test/thumb/a.webp".into())
+		);
+	}
+
+	#[test]
+	fn cleans_listing_titles() {
+		assert_eq!(clean_title("Read My Dad Is Too Strong Manga Online"), "My Dad Is Too Strong");
+	}
 }
 
 export!(MangareadOrg);
