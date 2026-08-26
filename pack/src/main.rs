@@ -230,6 +230,7 @@ fn append_file(
 	let mut header = tar::Header::new_gnu();
 	header.set_size(data.len() as u64);
 	header.set_mode(0o644);
+	header.set_mtime(0);
 	header.set_cksum();
 	builder.append_data(&mut header, name, data.as_slice()).map_err(|e| e.to_string())
 }

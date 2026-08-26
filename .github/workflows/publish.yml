@@ -44,6 +44,16 @@ jobs:
         run: |
           gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
             || gh release create latest --repo "$GITHUB_REPOSITORY" --title "latest" --notes "Rolling artifact release; repo.json is the index."
+
+          while IFS=$'\t' read -r asset_id asset_name; do
+            if [[ ! -f "dist/$asset_name" ]]; then
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${asset_id}"
+            fi
+          done < <(
+            gh api "repos/${GITHUB_REPOSITORY}/releases/tags/latest" \
+              --jq '.assets[] | [.id, .name] | @tsv'
+          )
+
           gh release upload latest dist/*.mvplug --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Commit repo.json
