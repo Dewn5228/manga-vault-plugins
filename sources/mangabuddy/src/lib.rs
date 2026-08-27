@@ -11,10 +11,6 @@ const BASE: &str = "https://comizy.io";
 const UA: &str =
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
-const RESERVED_PATHS: [&str; 9] = [
-	"lists", "ranking", "genres", "authors", "search", "latest", "static", "library", "settings",
-];
-
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
 		http::Header {
@@ -53,7 +49,7 @@ impl Guest for Mangabuddy {
 		SourceInfo {
 			id: "mangabuddy".to_string(),
 			name: "Mangabuddy".to_string(),
-			version: "1.0.2".to_string(),
+			version: "1.0.3".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -245,18 +241,22 @@ fn work_path(url: &str) -> String {
 }
 
 fn parse_items(body: &str) -> Vec<WorkSummary> {
+	let json_items = next_data_items(body);
+	if !json_items.is_empty() {
+		return json_items;
+	}
+
 	let mut works: Vec<WorkSummary> = Vec::new();
 	for element in html::find(body, "a[href^='/']") {
+		let Some(cover_url) = listing_cover(&element.html) else {
+			continue;
+		};
 		let href = match html::attr(&element, "href") {
 			Some(href) => href,
 			None => continue,
 		};
 		let path = href.trim_end_matches('/');
 		if path == "/" || path[1..].contains('/') || path.contains('.') {
-			continue;
-		}
-		let first_segment = &path[1..];
-		if RESERVED_PATHS.contains(&first_segment) {
 			continue;
 		}
 		let title = match html::attr(&element, "title") {
@@ -269,16 +269,42 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 		if title.is_empty() {
 			continue;
 		}
-		let cover_url = listing_cover(&element.html);
 		if let Some(work) = works.iter_mut().find(|work| work.url == url) {
 			if work.cover_url.is_none() {
-				work.cover_url = cover_url;
+				work.cover_url = Some(cover_url);
 			}
 		} else {
-			works.push(WorkSummary { title, url, cover_url });
+			works.push(WorkSummary {
+				title,
+				url,
+				cover_url: Some(cover_url),
+			});
 		}
 	}
 	works
+}
+
+fn next_data_items(body: &str) -> Vec<WorkSummary> {
+	let Some(script) = html::find_one(body, "script#__NEXT_DATA__") else {
+		return Vec::new();
+	};
+	let Ok(value) = serde_json::from_str::<serde_json::Value>(&html::text(&script)) else {
+		return Vec::new();
+	};
+	let props = &value["props"]["pageProps"];
+	["ssrItems", "items", "initialItems"]
+		.into_iter()
+		.find_map(|key| props[key].as_array())
+		.into_iter()
+		.flatten()
+		.filter_map(|item| {
+			Some(WorkSummary {
+				title: item["name"].as_str()?.to_string(),
+				url: absolute_url(item["url"].as_str()?),
+				cover_url: item["cover"].as_str().map(absolute_url),
+			})
+		})
+		.collect()
 }
 
 fn listing_cover(fragment: &str) -> Option<String> {

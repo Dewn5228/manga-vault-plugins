@@ -1,5 +1,5 @@
 id = "mangabuddy"
-version = "1.0.2"
+version = "1.0.3"
 backend = "wasm"
 entrypoint = "mangabuddy.wasm"
 plugin_api = "1"
