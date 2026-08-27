@@ -57,7 +57,7 @@ impl Guest for Freewebnovel {
 		SourceInfo {
 			id: "freewebnovel".to_string(),
 			name: "FreeWebNovel".to_string(),
-			version: "1.0.1".to_string(),
+			version: "1.0.2".to_string(),
 			kind: WorkKind::Novel,
 			icon_url: None,
 			referer_url: Some(BASE.to_string()),
@@ -201,21 +201,28 @@ fn parse_chapters(body: &str, selector: &str) -> Vec<Chapter> {
 
 fn parse_grid(body: &str) -> Vec<WorkSummary> {
 	let mut works: Vec<WorkSummary> = Vec::new();
-	for element in html::find(body, "a[href*='/novel/']") {
+	for card in html::find(body, ".ul-list1 .con") {
+		let Some(element) = html::find_one(&card.html, "h3 a[href^='/novel/']") else {
+			continue;
+		};
 		let href = match html::attr(&element, "href") {
 			Some(href) if href.starts_with("/novel/") && !href.contains("/chapter-") => href,
 			_ => continue,
 		};
-		let title = html::text(&element);
+		let title = html::attr(&element, "title").unwrap_or_else(|| html::text(&element));
 		let url = format!("{BASE}{href}");
 		if title.is_empty() || works.iter().any(|work| work.url == url) {
 			continue;
 		}
-		works.push(WorkSummary {
-			title,
-			url,
-			cover_url: None,
-		});
+		let cover_url = html::find_one(&card.html, ".pic img")
+			.and_then(|image| html::attr(&image, "data-src").or_else(|| html::attr(&image, "src")))
+			.map(|src| match src.as_str() {
+				src if src.starts_with("http://") || src.starts_with("https://") => src.to_owned(),
+				src if src.starts_with("//") => format!("https:{src}"),
+				src if src.starts_with('/') => format!("{BASE}{src}"),
+				src => format!("{BASE}/{src}"),
+			});
+		works.push(WorkSummary { title, url, cover_url });
 	}
 	works
 }

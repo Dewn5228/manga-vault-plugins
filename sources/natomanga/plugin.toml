@@ -1,5 +1,5 @@
 id = "natomanga"
-version = "1.0.1"
+version = "1.0.2"
 backend = "wasm"
 entrypoint = "natomanga.wasm"
 plugin_api = "1"

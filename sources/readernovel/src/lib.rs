@@ -54,7 +54,7 @@ impl Guest for Readernovel {
 		SourceInfo {
 			id: "readernovel".to_string(),
 			name: "ReaderNovel".to_string(),
-			version: "1.0.1".to_string(),
+			version: "1.0.2".to_string(),
 			kind: WorkKind::Novel,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -206,19 +206,35 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 		};
 		let title = match html::attr(&element, "title") {
 			Some(title) if !title.is_empty() => title,
-			_ => html::text(&element),
+			_ => html::find_one(&element.html, "img")
+				.and_then(|image| html::attr(&image, "alt"))
+				.unwrap_or_else(|| html::text(&element)),
 		};
 		let url = format!("{BASE}{href}");
-		if title.is_empty() || works.iter().any(|work| work.url == url) {
+		if title.is_empty() {
 			continue;
 		}
-		works.push(WorkSummary {
-			title,
-			url,
-			cover_url: None,
-		});
+		let cover_url = listing_cover(&element);
+		if let Some(work) = works.iter_mut().find(|work| work.url == url) {
+			if work.cover_url.is_none() {
+				work.cover_url = cover_url;
+			}
+		} else {
+			works.push(WorkSummary { title, url, cover_url });
+		}
 	}
 	works
+}
+
+fn listing_cover(element: &html::Element) -> Option<String> {
+	html::find_one(&element.html, "img")
+		.and_then(|image| html::attr(&image, "data-src").or_else(|| html::attr(&image, "src")))
+		.map(|src| match src.as_str() {
+			src if src.starts_with("http://") || src.starts_with("https://") => src.to_owned(),
+			src if src.starts_with("//") => format!("https:{src}"),
+			src if src.starts_with('/') => format!("{BASE}{src}"),
+			src => format!("{BASE}/{src}"),
+		})
 }
 
 fn search_via_api(query: &str) -> Result<Option<Vec<WorkSummary>>, SourceError> {

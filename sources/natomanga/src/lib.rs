@@ -3,19 +3,24 @@ wit_bindgen::generate!({
 	world: "source-world",
 });
 
-use exports::manga_vault::source::source::{
-	Guest, SourceError, SourceInfo, WorkDetails, WorkSummary,
-};
+use exports::manga_vault::source::source::{Guest, SourceError, SourceInfo, WorkDetails, WorkSummary};
 use manga_vault::source::types::{Chapter, WorkKind};
 use manga_vault::source::{flare_solverr, html, http};
 
 const BASE: &str = "https://www.natomanga.com";
-const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+const UA: &str =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
-		http::Header { name: "Referer".to_string(), value: format!("{BASE}/") },
-		http::Header { name: "User-Agent".to_string(), value: UA.to_string() },
+		http::Header {
+			name: "Referer".to_string(),
+			value: format!("{BASE}/"),
+		},
+		http::Header {
+			name: "User-Agent".to_string(),
+			value: UA.to_string(),
+		},
 	];
 
 	let response = http::get(url, Some(&headers)).map_err(|error| SourceError::Network(error))?;
@@ -24,11 +29,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 		return Err(SourceError::Network("empty response".into()));
 	};
 
-	if http::has_cloudflare_protection(
-		&response.body,
-		Some(response.status),
-		Some(&response.headers),
-	) {
+	if http::has_cloudflare_protection(&response.body, Some(response.status), Some(&response.headers)) {
 		if let Some(solved) = flare_solverr::get(url, None).map_err(|e| SourceError::Network(e))? {
 			return Ok(solved.body);
 		}
@@ -48,7 +49,7 @@ impl Guest for Natomanga {
 		SourceInfo {
 			id: "natomanga".to_string(),
 			name: "NatoManga".to_string(),
-			version: "1.0.1".to_string(),
+			version: "1.0.2".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -106,11 +107,7 @@ impl Guest for Natomanga {
 
 		let alternative_names = html::find_one(&body, "h2.story-alternative")
 			.map(|element| html::text(&element))
-			.map(|text| {
-				text.split_once(':')
-					.map(|(_, rest)| rest.trim().to_string())
-					.unwrap_or(text)
-			})
+			.map(|text| text.split_once(':').map(|(_, rest)| rest.trim().to_string()).unwrap_or(text))
 			.map(|text| {
 				text.split(',')
 					.map(|name| name.trim().to_string())
@@ -131,8 +128,7 @@ impl Guest for Natomanga {
 			}
 		}
 
-		let cover_url = html::find_one(&body, ".manga-info-pic img")
-			.and_then(|element| html::attr(&element, "src"));
+		let cover_url = html::find_one(&body, ".manga-info-pic img").and_then(|element| html::attr(&element, "src"));
 
 		let slug = url.rsplit('/').next().unwrap_or_default().to_string();
 		let mut chapters = chapters_from_api(&format!("{BASE}/api/manga/{slug}/chapters"), &url);
@@ -171,7 +167,11 @@ impl Guest for Natomanga {
 			let cdn = cdn.first().map(|value| value.trim_end_matches('/'));
 			let images: Vec<_> = cdn
 				.into_iter()
-				.flat_map(|cdn| paths.iter().map(move |path| format!("{cdn}/{}", path.trim_start_matches('/'))))
+				.flat_map(|cdn| {
+					paths
+						.iter()
+						.map(move |path| format!("{cdn}/{}", path.trim_start_matches('/')))
+				})
 				.collect();
 			if !images.is_empty() {
 				return Ok(images);
@@ -206,34 +206,44 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 	let mut works: Vec<WorkSummary> = Vec::new();
 	for element in html::find(body, "a[href*='/manga/']") {
 		let href = match html::attr(&element, "href") {
-			Some(href)
-				if href.contains("/manga/")
-					&& !href.contains("/chapter-")
-					&& !href.contains("/genre") =>
-			{
-				href
-			}
+			Some(href) if href.contains("/manga/") && !href.contains("/chapter-") && !href.contains("/genre") => href,
 			_ => continue,
 		};
 		let title = match html::attr(&element, "title") {
 			Some(title) if !title.is_empty() => title,
-			_ => html::text(&element),
+			_ => html::find_one(&element.html, "img")
+				.and_then(|image| html::attr(&image, "alt"))
+				.unwrap_or_else(|| html::text(&element)),
 		};
 		let url = if href.starts_with("http") {
 			href
 		} else {
 			format!("{BASE}{href}")
 		};
-		if title.is_empty() || works.iter().any(|work| work.url == url) {
+		if title.is_empty() {
 			continue;
 		}
-		works.push(WorkSummary {
-			title,
-			url,
-			cover_url: None,
-		});
+		let cover_url = listing_cover(&element.html);
+		if let Some(work) = works.iter_mut().find(|work| work.url == url) {
+			if work.cover_url.is_none() {
+				work.cover_url = cover_url;
+			}
+		} else {
+			works.push(WorkSummary { title, url, cover_url });
+		}
 	}
 	works
+}
+
+fn listing_cover(fragment: &str) -> Option<String> {
+	html::find_one(fragment, "img")
+		.and_then(|image| html::attr(&image, "data-src").or_else(|| html::attr(&image, "src")))
+		.map(|src| match src.as_str() {
+			src if src.starts_with("http://") || src.starts_with("https://") => src.to_owned(),
+			src if src.starts_with("//") => format!("https:{src}"),
+			src if src.starts_with('/') => format!("{BASE}{src}"),
+			src => format!("{BASE}/{src}"),
+		})
 }
 
 fn chapters_from_api(api_url_base: &str, chapter_url_prefix: &str) -> Vec<Chapter> {

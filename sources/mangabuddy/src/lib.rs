@@ -3,14 +3,13 @@ wit_bindgen::generate!({
 	world: "source-world",
 });
 
-use exports::manga_vault::source::source::{
-	Guest, SourceError, SourceInfo, WorkDetails, WorkSummary,
-};
+use exports::manga_vault::source::source::{Guest, SourceError, SourceInfo, WorkDetails, WorkSummary};
 use manga_vault::source::types::{Chapter, WorkKind};
 use manga_vault::source::{flare_solverr, html, http};
 
 const BASE: &str = "https://comizy.io";
-const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+const UA: &str =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 const RESERVED_PATHS: [&str; 9] = [
 	"lists", "ranking", "genres", "authors", "search", "latest", "static", "library", "settings",
@@ -18,8 +17,14 @@ const RESERVED_PATHS: [&str; 9] = [
 
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
-		http::Header { name: "Referer".to_string(), value: format!("{BASE}/") },
-		http::Header { name: "User-Agent".to_string(), value: UA.to_string() },
+		http::Header {
+			name: "Referer".to_string(),
+			value: format!("{BASE}/"),
+		},
+		http::Header {
+			name: "User-Agent".to_string(),
+			value: UA.to_string(),
+		},
 	];
 
 	let response = http::get(url, Some(&headers)).map_err(|error| SourceError::Network(error))?;
@@ -28,11 +33,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 		return Err(SourceError::Network("empty response".into()));
 	};
 
-	if http::has_cloudflare_protection(
-		&response.body,
-		Some(response.status),
-		Some(&response.headers),
-	) {
+	if http::has_cloudflare_protection(&response.body, Some(response.status), Some(&response.headers)) {
 		if let Some(solved) = flare_solverr::get(url, None).map_err(|e| SourceError::Network(e))? {
 			return Ok(solved.body);
 		}
@@ -52,7 +53,7 @@ impl Guest for Mangabuddy {
 		SourceInfo {
 			id: "mangabuddy".to_string(),
 			name: "Mangabuddy".to_string(),
-			version: "1.0.1".to_string(),
+			version: "1.0.2".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -64,10 +65,7 @@ impl Guest for Mangabuddy {
 		if page > 20 {
 			return Ok(vec![]);
 		}
-		let body = http_get(&format!(
-			"{BASE}/search?q={}&page={page}",
-			urlencoding::encode(&query)
-		))?;
+		let body = http_get(&format!("{BASE}/search?q={}&page={page}", urlencoding::encode(&query)))?;
 		Ok(parse_items(&body))
 	}
 
@@ -97,10 +95,7 @@ impl Guest for Mangabuddy {
 		let mut authors = Vec::new();
 		for element in html::find(&body, "a[href*='/author']") {
 			let author = html::text(&element);
-			if !author.is_empty()
-				&& !author.eq_ignore_ascii_case("updating")
-				&& !authors.contains(&author)
-			{
+			if !author.is_empty() && !author.eq_ignore_ascii_case("updating") && !authors.contains(&author) {
 				authors.push(author);
 			}
 		}
@@ -130,26 +125,26 @@ impl Guest for Mangabuddy {
 		let mut chapters = next_data_chapters(&body);
 		if chapters.is_empty() {
 			for element in html::find(&body, "a[href*='/chapter-']") {
-			let Some(href) = html::attr(&element, "href") else {
-				continue;
-			};
-			if !href.contains(&path) {
-				continue;
-			}
-			let title = html::text(&element);
-			if !title.trim_start().starts_with("Chapter") {
-				continue;
-			}
-			chapters.push(Chapter {
-				title,
-				url: if href.starts_with("http") {
-					href
-				} else {
-					format!("{BASE}{href}")
-				},
-				date: None,
-				scanlation_group: None,
-			});
+				let Some(href) = html::attr(&element, "href") else {
+					continue;
+				};
+				if !href.contains(&path) {
+					continue;
+				}
+				let title = html::text(&element);
+				if !title.trim_start().starts_with("Chapter") {
+					continue;
+				}
+				chapters.push(Chapter {
+					title,
+					url: if href.starts_with("http") {
+						href
+					} else {
+						format!("{BASE}{href}")
+					},
+					date: None,
+					scanlation_group: None,
+				});
 			}
 		}
 		chapters.reverse();
@@ -266,19 +261,35 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 		}
 		let title = match html::attr(&element, "title") {
 			Some(title) if !title.is_empty() => title,
-			_ => html::text(&element),
+			_ => html::find_one(&element.html, "img")
+				.and_then(|image| html::attr(&image, "alt"))
+				.unwrap_or_else(|| html::text(&element)),
 		};
 		let url = format!("{BASE}{path}");
-		if title.is_empty() || works.iter().any(|work| work.url == url) {
+		if title.is_empty() {
 			continue;
 		}
-		works.push(WorkSummary {
-			title,
-			url,
-			cover_url: None,
-		});
+		let cover_url = listing_cover(&element.html);
+		if let Some(work) = works.iter_mut().find(|work| work.url == url) {
+			if work.cover_url.is_none() {
+				work.cover_url = cover_url;
+			}
+		} else {
+			works.push(WorkSummary { title, url, cover_url });
+		}
 	}
 	works
+}
+
+fn listing_cover(fragment: &str) -> Option<String> {
+	html::find_one(fragment, "img")
+		.and_then(|image| html::attr(&image, "data-src").or_else(|| html::attr(&image, "src")))
+		.map(|src| match src.as_str() {
+			src if src.starts_with("http://") || src.starts_with("https://") => src.to_owned(),
+			src if src.starts_with("//") => format!("https:{src}"),
+			src if src.starts_with('/') => format!("{BASE}{src}"),
+			src => format!("{BASE}/{src}"),
+		})
 }
 
 export!(Mangabuddy);
