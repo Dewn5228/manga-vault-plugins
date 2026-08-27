@@ -15,9 +15,9 @@
       "id": "hari_manga",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "4f892ab01a09538e8f12bc4791c9bb13fb2d79c2d02afb81d8f71f66e6c910e3",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/hari_manga-1.0.2.mvplug",
-      "version": "1.0.2"
+      "sha256": "4260a029dca6c1209bc6bae720c3a09424c8e3b2da4b521a1b18011bcead613e",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/hari_manga-1.0.3.mvplug",
+      "version": "1.0.3"
     },
     {
       "backend": "wasm",
@@ -92,5 +92,5 @@
       "version": "1.0.2"
     }
   ],
-  "updated_at": "2026-08-27T22:30:41.856392379+00:00"
+  "updated_at": "2026-08-27T22:36:31.830217901+00:00"
 }
