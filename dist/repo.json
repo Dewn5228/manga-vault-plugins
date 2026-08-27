@@ -6,7 +6,7 @@
       "id": "freewebnovel",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "d6258c57bd62ae7feee195b89ae9042e7edad8f1815cb484b04b66859bb9bf30",
+      "sha256": "5b38fbe3d77b78ba62857f4ad745ae503bcc8518635e1f84f4bf866f91c6dcf5",
       "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/freewebnovel-1.0.0.mvplug",
       "version": "1.0.0"
     },
@@ -33,18 +33,18 @@
       "id": "mangabuddy",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "e4772a2fa122f01319a316ecf07077d0e6f5b81bdc85bf244a24d9419d593b3c",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.0.mvplug",
-      "version": "1.0.0"
+      "sha256": "6f4e896857f01df02bfa8af35496a40d336a9a4f27f7a034a3ed81cac5055df5",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.1.mvplug",
+      "version": "1.0.1"
     },
     {
       "backend": "wasm",
       "id": "mangakakalot",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "309ffb35bfe7d769a1427d9b872e623ccb29c42bacfd4154936d856d59275716",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangakakalot-1.0.0.mvplug",
-      "version": "1.0.0"
+      "sha256": "9c6de5b13d6bfb9db918444fce48a327a760f7857e723d426ddad9356759f6dc",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangakakalot-1.0.1.mvplug",
+      "version": "1.0.1"
     },
     {
       "backend": "wasm",
@@ -60,9 +60,9 @@
       "id": "natomanga",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "2bd9f32f742b6082b9c84ec03f2f125ed00cd8644ca8f6286daaa666a4d4c465",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/natomanga-1.0.0.mvplug",
-      "version": "1.0.0"
+      "sha256": "3f786884428351f29137ab08901ecaaa384343a540e4a02b724057532efa6209",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/natomanga-1.0.1.mvplug",
+      "version": "1.0.1"
     },
     {
       "backend": "wasm",
@@ -92,5 +92,5 @@
       "version": "1.0.0"
     }
   ],
-  "updated_at": "2026-08-26T10:33:57.921503486+00:00"
+  "updated_at": "2026-08-27T18:51:47.437881648+00:00"
 }
