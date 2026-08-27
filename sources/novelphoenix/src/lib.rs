@@ -3,19 +3,24 @@ wit_bindgen::generate!({
 	world: "source-world",
 });
 
-use exports::manga_vault::source::source::{
-	Guest, SourceError, SourceInfo, WorkDetails, WorkSummary,
-};
+use exports::manga_vault::source::source::{Guest, SourceError, SourceInfo, WorkDetails, WorkSummary};
 use manga_vault::source::types::{Chapter, WorkKind};
 use manga_vault::source::{flare_solverr, html, http};
 
 const BASE: &str = "https://novelphoenix.com";
-const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+const UA: &str =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
-		http::Header { name: "Referer".to_string(), value: format!("{BASE}/") },
-		http::Header { name: "User-Agent".to_string(), value: UA.to_string() },
+		http::Header {
+			name: "Referer".to_string(),
+			value: format!("{BASE}/"),
+		},
+		http::Header {
+			name: "User-Agent".to_string(),
+			value: UA.to_string(),
+		},
 	];
 
 	let response = http::get(url, Some(&headers)).map_err(|error| SourceError::Network(error))?;
@@ -24,11 +29,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 		return Err(SourceError::Network("empty response".into()));
 	};
 
-	if http::has_cloudflare_protection(
-		&response.body,
-		Some(response.status),
-		Some(&response.headers),
-	) {
+	if http::has_cloudflare_protection(&response.body, Some(response.status), Some(&response.headers)) {
 		if let Some(solved) = flare_solverr::get(url, None).map_err(|e| SourceError::Network(e))? {
 			return Ok(solved.body);
 		}
@@ -52,7 +53,7 @@ impl Guest for Novelphoenix {
 		SourceInfo {
 			id: "novelphoenix".to_string(),
 			name: "NovelPhoenix".to_string(),
-			version: "1.0.0".to_string(),
+			version: "1.0.1".to_string(),
 			kind: WorkKind::Novel,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -64,10 +65,7 @@ impl Guest for Novelphoenix {
 		if page > 100 {
 			return Ok(vec![]);
 		}
-		let body = http_get(&format!(
-			"{BASE}/search?keyword={}&page={page}",
-			urlencoding::encode(&query)
-		))?;
+		let body = http_get(&format!("{BASE}/search?keyword={}&page={page}", urlencoding::encode(&query)))?;
 		Ok(parse_items(&body))
 	}
 
@@ -83,8 +81,7 @@ impl Guest for Novelphoenix {
 		if page > 50 {
 			return Ok(vec![]);
 		}
-		let body =
-			http_get(&format!("{BASE}/genre-all/sort-popular/status-all/all-novel?page={page}"))?;
+		let body = http_get(&format!("{BASE}/genre-all/sort-popular/status-all/all-novel?page={page}"))?;
 		Ok(parse_items(&body))
 	}
 
@@ -118,9 +115,7 @@ impl Guest for Novelphoenix {
 			}
 		}
 
-		let cover_url = html::find_one(&body, "figure.novel-cover img")
-			.and_then(|element| html::attr(&element, "data-src").or_else(|| html::attr(&element, "src")))
-			.map(|src| if src.starts_with("http") { src } else { format!("https:{src}") });
+		let cover_url = find_cover(&body);
 
 		let mut chapters = Vec::new();
 		let chapters_base = format!("{}/chapters", url.trim_end_matches('/'));
@@ -172,6 +167,21 @@ impl Guest for Novelphoenix {
 	}
 }
 
+fn find_cover(body: &str) -> Option<String> {
+	html::find_one(body, "meta[property='og:image']")
+		.and_then(|element| html::attr(&element, "content"))
+		.or_else(|| {
+			html::find_one(body, "figure.novel-cover img, .novel-cover img, .book-cover img")
+				.and_then(|element| html::attr(&element, "data-src").or_else(|| html::attr(&element, "src")))
+		})
+		.map(|url| match url.as_str() {
+			url if url.starts_with("http://") || url.starts_with("https://") => url.to_owned(),
+			url if url.starts_with("//") => format!("https:{url}"),
+			url if url.starts_with('/') => format!("{BASE}{url}"),
+			url => format!("{BASE}/{url}"),
+		})
+}
+
 fn parse_items(body: &str) -> Vec<WorkSummary> {
 	let mut works: Vec<WorkSummary> = Vec::new();
 	let mut elements = html::find(body, "a[href^='/novel/']");
@@ -185,11 +195,7 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 			Some(title) if !title.is_empty() => title,
 			_ => html::text(&element),
 		};
-		let title = title
-			.strip_suffix(" | NovelFire")
-			.unwrap_or(&title)
-			.trim()
-			.to_string();
+		let title = title.strip_suffix(" | NovelFire").unwrap_or(&title).trim().to_string();
 		let url = format!("{BASE}{href}");
 		if title.is_empty() || works.iter().any(|work| work.url == url) {
 			continue;

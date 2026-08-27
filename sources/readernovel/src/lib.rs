@@ -3,19 +3,24 @@ wit_bindgen::generate!({
 	world: "source-world",
 });
 
-use exports::manga_vault::source::source::{
-	Guest, SourceError, SourceInfo, WorkDetails, WorkSummary,
-};
+use exports::manga_vault::source::source::{Guest, SourceError, SourceInfo, WorkDetails, WorkSummary};
 use manga_vault::source::types::{Chapter, WorkKind};
 use manga_vault::source::{flare_solverr, html, http};
 
 const BASE: &str = "https://www.readernovel.net";
-const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+const UA: &str =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
-		http::Header { name: "Referer".to_string(), value: format!("{BASE}/") },
-		http::Header { name: "User-Agent".to_string(), value: UA.to_string() },
+		http::Header {
+			name: "Referer".to_string(),
+			value: format!("{BASE}/"),
+		},
+		http::Header {
+			name: "User-Agent".to_string(),
+			value: UA.to_string(),
+		},
 	];
 
 	let response = http::get(url, Some(&headers)).map_err(|error| SourceError::Network(error))?;
@@ -24,11 +29,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 		return Err(SourceError::Network("empty response".into()));
 	};
 
-	if http::has_cloudflare_protection(
-		&response.body,
-		Some(response.status),
-		Some(&response.headers),
-	) {
+	if http::has_cloudflare_protection(&response.body, Some(response.status), Some(&response.headers)) {
 		if let Some(solved) = flare_solverr::get(url, None).map_err(|e| SourceError::Network(e))? {
 			return Ok(solved.body);
 		}
@@ -42,8 +43,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 }
 
 fn browse(sort: &str, page: u32) -> Result<Vec<WorkSummary>, SourceError> {
-	let body =
-		http_get(&format!("{BASE}/browse?sort={sort}&status=0&p={page}"))?;
+	let body = http_get(&format!("{BASE}/browse?sort={sort}&status=0&p={page}"))?;
 	Ok(parse_items(&body))
 }
 
@@ -54,7 +54,7 @@ impl Guest for Readernovel {
 		SourceInfo {
 			id: "readernovel".to_string(),
 			name: "ReaderNovel".to_string(),
-			version: "1.0.0".to_string(),
+			version: "1.0.1".to_string(),
 			kind: WorkKind::Novel,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -110,9 +110,9 @@ impl Guest for Readernovel {
 					if !value.eq_ignore_ascii_case("unknown") && !authors.contains(&value) {
 						authors.push(value);
 					}
-				},
+				}
 				"Status" => status = Some(value),
-				_ => {},
+				_ => {}
 			}
 		}
 
@@ -128,11 +128,7 @@ impl Guest for Readernovel {
 			}
 		}
 
-		let cover_url = html::find_one(&body, ".book-cover img, .novel-cover img")
-			.and_then(|element| {
-				html::attr(&element, "data-src").or_else(|| html::attr(&element, "src"))
-			})
-			.filter(|src| src.starts_with("http"));
+		let cover_url = find_cover(&body);
 
 		let mut chapters = Vec::new();
 		for element in html::find(&body, ".chapter-list-wrapper a") {
@@ -186,6 +182,21 @@ impl Guest for Readernovel {
 	}
 }
 
+fn find_cover(body: &str) -> Option<String> {
+	html::find_one(body, "meta[property='og:image']")
+		.and_then(|element| html::attr(&element, "content"))
+		.or_else(|| {
+			html::find_one(body, ".book-cover img, .novel-cover img")
+				.and_then(|element| html::attr(&element, "data-src").or_else(|| html::attr(&element, "src")))
+		})
+		.map(|url| match url.as_str() {
+			url if url.starts_with("http://") || url.starts_with("https://") => url.to_owned(),
+			url if url.starts_with("//") => format!("https:{url}"),
+			url if url.starts_with('/') => format!("{BASE}{url}"),
+			url => format!("{BASE}/{url}"),
+		})
+}
+
 fn parse_items(body: &str) -> Vec<WorkSummary> {
 	let mut works: Vec<WorkSummary> = Vec::new();
 	for element in html::find(body, "a[href*='/novel/']") {
@@ -212,8 +223,8 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 
 fn search_via_api(query: &str) -> Result<Option<Vec<WorkSummary>>, SourceError> {
 	let browse_body = http_get(&format!("{BASE}/browse?sort=date&status=0&p=1"))?;
-	let Some(token) = html::find_one(&browse_body, "input.input-search")
-		.and_then(|element| html::attr(&element, "data-csrf"))
+	let Some(token) =
+		html::find_one(&browse_body, "input.input-search").and_then(|element| html::attr(&element, "data-csrf"))
 	else {
 		return Ok(None);
 	};
@@ -224,15 +235,17 @@ fn search_via_api(query: &str) -> Result<Option<Vec<WorkSummary>>, SourceError> 
 		token
 	);
 	let headers = vec![
-		http::Header { name: "Content-Type".to_string(), value: "application/json".to_string() },
-		http::Header { name: "Accept".to_string(), value: "application/json".to_string() },
+		http::Header {
+			name: "Content-Type".to_string(),
+			value: "application/json".to_string(),
+		},
+		http::Header {
+			name: "Accept".to_string(),
+			value: "application/json".to_string(),
+		},
 	];
-	let response = http::post(
-		&format!("{BASE}/search"),
-		&payload,
-		Some(&headers),
-	)
-	.map_err(|error| SourceError::Network(error))?;
+	let response =
+		http::post(&format!("{BASE}/search"), &payload, Some(&headers)).map_err(|error| SourceError::Network(error))?;
 
 	let Some(response) = response else {
 		return Ok(None);

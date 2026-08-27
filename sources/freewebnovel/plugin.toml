@@ -1,5 +1,5 @@
 id = "freewebnovel"
-version = "1.0.0"
+version = "1.0.1"
 backend = "wasm"
 entrypoint = "freewebnovel.wasm"
 plugin_api = "1"

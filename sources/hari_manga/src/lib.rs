@@ -54,10 +54,10 @@ impl Guest for HariManga {
 		SourceInfo {
 			id: "hari_manga".to_string(),
 			name: "HariManga".to_string(),
-			version: "1.0.1".to_string(),
+			version: "1.0.2".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
-			referer_url: Some(format!("{BASE}/")),
+			referer_url: Some("https://www.harimanga.co.uk/".to_string()),
 			base_url: Some(BASE.to_string()),
 		}
 	}

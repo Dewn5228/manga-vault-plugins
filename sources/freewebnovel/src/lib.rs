@@ -3,21 +3,32 @@ wit_bindgen::generate!({
 	world: "source-world",
 });
 
-use exports::manga_vault::source::source::{
-	Guest, SourceError, SourceInfo, WorkDetails, WorkSummary,
-};
-use manga_vault::source::{flare_solverr, html, http};
+use exports::manga_vault::source::source::{Guest, SourceError, SourceInfo, WorkDetails, WorkSummary};
 use manga_vault::source::types::{Chapter, WorkKind};
+use manga_vault::source::{flare_solverr, html, http};
 
 const BASE: &str = "https://freewebnovel.com";
-const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
+const UA: &str =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36";
 
 fn http_get(url: &str) -> Result<String, SourceError> {
 	let headers = vec![
-		http::Header { name: "Content-Type".to_string(), value: "application/x-www-form-urlencoded".to_string() },
-		http::Header { name: "Referer".to_string(), value: format!("{BASE}/home") },
-		http::Header { name: "Origin".to_string(), value: BASE.to_string() },
-		http::Header { name: "User-Agent".to_string(), value: UA.to_string() },
+		http::Header {
+			name: "Content-Type".to_string(),
+			value: "application/x-www-form-urlencoded".to_string(),
+		},
+		http::Header {
+			name: "Referer".to_string(),
+			value: format!("{BASE}/home"),
+		},
+		http::Header {
+			name: "Origin".to_string(),
+			value: BASE.to_string(),
+		},
+		http::Header {
+			name: "User-Agent".to_string(),
+			value: UA.to_string(),
+		},
 	];
 
 	let response = http::get(url, Some(&headers)).map_err(|error| SourceError::Network(error))?;
@@ -26,11 +37,7 @@ fn http_get(url: &str) -> Result<String, SourceError> {
 		return Err(SourceError::Network("empty response".into()));
 	};
 
-	if http::has_cloudflare_protection(
-		&response.body,
-		Some(response.status),
-		Some(&response.headers),
-	) {
+	if http::has_cloudflare_protection(&response.body, Some(response.status), Some(&response.headers)) {
 		if let Some(solved) = flare_solverr::get(url, None).map_err(|e| SourceError::Network(e))? {
 			return Ok(solved.body);
 		}
@@ -50,7 +57,7 @@ impl Guest for Freewebnovel {
 		SourceInfo {
 			id: "freewebnovel".to_string(),
 			name: "FreeWebNovel".to_string(),
-			version: "1.0.0".to_string(),
+			version: "1.0.1".to_string(),
 			kind: WorkKind::Novel,
 			icon_url: None,
 			referer_url: Some(BASE.to_string()),
@@ -62,10 +69,7 @@ impl Guest for Freewebnovel {
 		if page > 1 {
 			return Ok(vec![]);
 		}
-		let body = http_get(&format!(
-			"{BASE}/search?keyword={}",
-			urlencoding::encode(&query)
-		))?;
+		let body = http_get(&format!("{BASE}/search?keyword={}", urlencoding::encode(&query)))?;
 		Ok(parse_grid(&body))
 	}
 
@@ -109,6 +113,7 @@ impl Guest for Freewebnovel {
 		let status = html::find_one(&body, ".header-stats span:last-of-type")
 			.map(|element| html::text(&element))
 			.filter(|status| !status.is_empty());
+		let cover_url = find_cover(&body);
 
 		let mut chapters = Vec::new();
 		chapters.extend(parse_chapters(&body, "#idData a"));
@@ -137,7 +142,7 @@ impl Guest for Freewebnovel {
 		Ok(WorkDetails {
 			title,
 			url,
-			cover_url: None,
+			cover_url,
 			alternative_names: vec![],
 			authors,
 			artists: vec![],
@@ -159,6 +164,24 @@ impl Guest for Freewebnovel {
 			.collect();
 		Ok(paragraphs)
 	}
+}
+
+fn find_cover(body: &str) -> Option<String> {
+	html::find_one(body, "meta[property='og:image']")
+		.and_then(|element| html::attr(&element, "content"))
+		.or_else(|| {
+			html::find_one(
+				body,
+				".novel-cover img, .book-cover img, .book-img img, img[itemprop='image']",
+			)
+			.and_then(|element| html::attr(&element, "data-src").or_else(|| html::attr(&element, "src")))
+		})
+		.map(|url| match url.as_str() {
+			url if url.starts_with("http://") || url.starts_with("https://") => url.to_string(),
+			url if url.starts_with("//") => format!("https:{url}"),
+			url if url.starts_with('/') => format!("{BASE}{url}"),
+			url => format!("{BASE}/{url}"),
+		})
 }
 
 fn parse_chapters(body: &str, selector: &str) -> Vec<Chapter> {
