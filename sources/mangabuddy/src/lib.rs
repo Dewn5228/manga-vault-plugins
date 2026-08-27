@@ -52,7 +52,7 @@ impl Guest for Mangabuddy {
 		SourceInfo {
 			id: "mangabuddy".to_string(),
 			name: "Mangabuddy".to_string(),
-			version: "1.0.0".to_string(),
+			version: "1.0.1".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -127,16 +127,21 @@ impl Guest for Mangabuddy {
 			.filter(|src| src.starts_with("http"));
 
 		let path = work_path(&url);
-		let mut chapters = Vec::new();
-		for element in html::find(&body, "a[href*='/chapter-']") {
+		let mut chapters = next_data_chapters(&body);
+		if chapters.is_empty() {
+			for element in html::find(&body, "a[href*='/chapter-']") {
 			let Some(href) = html::attr(&element, "href") else {
 				continue;
 			};
 			if !href.contains(&path) {
 				continue;
 			}
+			let title = html::text(&element);
+			if !title.trim_start().starts_with("Chapter") {
+				continue;
+			}
 			chapters.push(Chapter {
-				title: html::text(&element),
+				title,
 				url: if href.starts_with("http") {
 					href
 				} else {
@@ -145,6 +150,7 @@ impl Guest for Mangabuddy {
 				date: None,
 				scanlation_group: None,
 			});
+			}
 		}
 		chapters.reverse();
 
@@ -166,6 +172,10 @@ impl Guest for Mangabuddy {
 
 	fn fetch_chapter(url: String) -> Result<Vec<String>, SourceError> {
 		let body = http_get(&url)?;
+		let json_images = next_data_images(&body);
+		if !json_images.is_empty() {
+			return Ok(json_images);
+		}
 		let mut images = Vec::new();
 		for element in html::find(&body, "img[src*='.cmzcdn.']") {
 			let Some(src) = html::attr(&element, "src") else {
@@ -180,6 +190,53 @@ impl Guest for Mangabuddy {
 		}
 		Ok(images)
 	}
+}
+
+fn next_data_chapters(body: &str) -> Vec<Chapter> {
+	let Some(script) = html::find_one(body, "script#__NEXT_DATA__") else {
+		return Vec::new();
+	};
+	let script_text = html::text(&script);
+	let Ok(value) = serde_json::from_str::<serde_json::Value>(&script_text) else {
+		return Vec::new();
+	};
+	value["props"]["pageProps"]["initialManga"]["chapters"]
+		.as_array()
+		.into_iter()
+		.flatten()
+		.filter_map(|chapter| {
+			Some(Chapter {
+				title: chapter["name"].as_str()?.to_string(),
+				url: absolute_url(chapter["url"].as_str()?),
+				date: chapter["updatedAt"].as_str().map(str::to_string),
+				scanlation_group: None,
+			})
+		})
+		.collect()
+}
+
+fn absolute_url(path: &str) -> String {
+	if path.starts_with("http") {
+		path.to_string()
+	} else {
+		format!("{BASE}{path}")
+	}
+}
+
+fn next_data_images(body: &str) -> Vec<String> {
+	let Some(script) = html::find_one(body, "script#__NEXT_DATA__") else {
+		return Vec::new();
+	};
+	let text = html::text(&script);
+	let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) else {
+		return Vec::new();
+	};
+	value["props"]["pageProps"]["initialChapter"]["images"]
+		.as_array()
+		.into_iter()
+		.flatten()
+		.filter_map(|image| image.as_str().map(str::to_string))
+		.collect()
 }
 
 fn work_path(url: &str) -> String {

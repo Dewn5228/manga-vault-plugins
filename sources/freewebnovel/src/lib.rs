@@ -111,14 +111,26 @@ impl Guest for Freewebnovel {
 			.filter(|status| !status.is_empty());
 
 		let mut chapters = Vec::new();
-		for element in html::find(&body, "#idData a") {
-			let chapter_url = html::attr(&element, "href").unwrap_or_default();
-			chapters.push(Chapter {
-				title: html::text(&element),
-				url: format!("{BASE}{chapter_url}"),
-				date: None,
-				scanlation_group: None,
-			});
+		chapters.extend(parse_chapters(&body, "#idData a"));
+		let total_pages = html::find_one(&body, "#indexListPage")
+			.and_then(|element| html::attr(&element, "data-total-page"))
+			.and_then(|pages| pages.parse::<u32>().ok())
+			.unwrap_or(1);
+		for page in 2..=total_pages {
+			std::thread::sleep(std::time::Duration::from_millis(750));
+			let page_url = format!(
+				"{}{}ajax=chapters&page={page}&pageSize=40",
+				url,
+				if url.contains('?') { '&' } else { '?' },
+			);
+			let page_body = http_get(&page_url)?;
+			let page_json = serde_json::from_str::<serde_json::Value>(&page_body)
+				.map_err(|error| SourceError::Parse(error.to_string()))?;
+			let page_html = page_json
+				.get("html")
+				.and_then(serde_json::Value::as_str)
+				.ok_or_else(|| SourceError::Parse("missing chapter page html".into()))?;
+			chapters.extend(parse_chapters(page_html, "a[href*='/chapter-']"));
 		}
 		chapters.reverse();
 
@@ -147,6 +159,21 @@ impl Guest for Freewebnovel {
 			.collect();
 		Ok(paragraphs)
 	}
+}
+
+fn parse_chapters(body: &str, selector: &str) -> Vec<Chapter> {
+	html::find(body, selector)
+		.into_iter()
+		.map(|element| {
+			let chapter_url = html::attr(&element, "href").unwrap_or_default();
+			Chapter {
+				title: html::text(&element),
+				url: format!("{BASE}{chapter_url}"),
+				date: None,
+				scanlation_group: None,
+			}
+		})
+		.collect()
 }
 
 fn parse_grid(body: &str) -> Vec<WorkSummary> {

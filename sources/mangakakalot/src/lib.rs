@@ -48,7 +48,7 @@ impl Guest for Mangakakalot {
 		SourceInfo {
 			id: "mangakakalot".to_string(),
 			name: "MangaKakalot".to_string(),
-			version: "1.0.0".to_string(),
+			version: "1.0.1".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some(format!("{BASE}/")),
@@ -167,6 +167,16 @@ impl Guest for Mangakakalot {
 
 	fn fetch_chapter(url: String) -> Result<Vec<String>, SourceError> {
 		let body = http_get(&url)?;
+		if let (Some(cdn), Some(paths)) = (js_strings(&body, "cdns"), js_strings(&body, "chapterImages")) {
+			let cdn = cdn.first().map(|value| value.trim_end_matches('/'));
+			let images: Vec<_> = cdn
+				.into_iter()
+				.flat_map(|cdn| paths.iter().map(move |path| format!("{cdn}/{}", path.trim_start_matches('/'))))
+				.collect();
+			if !images.is_empty() {
+				return Ok(images);
+			}
+		}
 		let mut images = Vec::new();
 		for selector in ["div.vung-doc img", "div.container-chapter-reader img"] {
 			for element in html::find(&body, selector) {
@@ -228,8 +238,8 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 
 fn chapters_from_api(api_url_base: &str, chapter_url_prefix: &str) -> Vec<Chapter> {
 	let mut all = Vec::new();
-	for page in 1..=200u32 {
-		let body = match http_get(&format!("{api_url_base}?page={page}")) {
+	for page in 0..=200u32 {
+		let body = match http_get(&format!("{api_url_base}?limit=50&offset={}", page * 50)) {
 			Ok(body) => body,
 			Err(_) => break,
 		};
@@ -280,6 +290,13 @@ fn extract_string_field(text: &str, field: &str) -> Option<String> {
 	let rest = &text[start..];
 	let end = rest.find('"')?;
 	Some(rest[..end].to_string())
+}
+
+fn js_strings(body: &str, field: &str) -> Option<Vec<String>> {
+	let start = body.find(&format!("\"{field}\""))?;
+	let open = start + body[start..].find('[')?;
+	let close = open + body[open..].find(']')? + 1;
+	serde_json::from_str(&body[open..close]).ok()
 }
 
 export!(Mangakakalot);
