@@ -54,7 +54,7 @@ impl Guest for HariManga {
 		SourceInfo {
 			id: "hari_manga".to_string(),
 			name: "HariManga".to_string(),
-			version: "1.0.2".to_string(),
+			version: "1.0.3".to_string(),
 			kind: WorkKind::Manga,
 			icon_url: None,
 			referer_url: Some("https://www.harimanga.co.uk/".to_string()),
@@ -180,10 +180,9 @@ fn parse_items(body: &str) -> Vec<WorkSummary> {
 		};
 		let title = match html::attr(&element, "title") {
 			Some(title) if !title.is_empty() && title != href => title,
-			_ => match html::attr(&element, "alt") {
-				Some(alt) if !alt.is_empty() => alt,
-				_ => html::text(&element),
-			},
+			_ => html::find_one(&element.html, "img")
+				.and_then(|image| html::attr(&image, "alt"))
+				.unwrap_or_else(|| html::text(&element)),
 		};
 		let url = if href.starts_with("http") {
 			href

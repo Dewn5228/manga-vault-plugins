@@ -1,5 +1,5 @@
 id = "hari_manga"
-version = "1.0.2"
+version = "1.0.3"
 backend = "wasm"
 entrypoint = "hari_manga.wasm"
 plugin_api = "1"
