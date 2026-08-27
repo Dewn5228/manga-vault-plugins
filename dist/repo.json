@@ -6,9 +6,9 @@
       "id": "freewebnovel",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "e0aad85c216375a18431bdeb5dd1ca96ba62eef351b4daa0a3196bf86e8c3895",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/freewebnovel-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "d895726500909081e725866a98b12b946805a5e48c3dde03a6c337a89267a9a2",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/freewebnovel-1.0.2.mvplug",
+      "version": "1.0.2"
     },
     {
       "backend": "wasm",
@@ -33,18 +33,18 @@
       "id": "mangabuddy",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "6f4e896857f01df02bfa8af35496a40d336a9a4f27f7a034a3ed81cac5055df5",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "3dc6ce8e40d07531860c0d34ed22b6c159ab69631a2651eedf7de331deec1604",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.2.mvplug",
+      "version": "1.0.2"
     },
     {
       "backend": "wasm",
       "id": "mangakakalot",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "9c6de5b13d6bfb9db918444fce48a327a760f7857e723d426ddad9356759f6dc",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangakakalot-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "b164b090502f2491d774f4fac088c845fad65286a71d73744aac7aa6659eb756",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangakakalot-1.0.2.mvplug",
+      "version": "1.0.2"
     },
     {
       "backend": "wasm",
@@ -60,37 +60,37 @@
       "id": "natomanga",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "3f786884428351f29137ab08901ecaaa384343a540e4a02b724057532efa6209",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/natomanga-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "9e3bf31bb409996765e4fe8a6e95282ae5fb94270d68936c88b20978c44c0703",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/natomanga-1.0.2.mvplug",
+      "version": "1.0.2"
     },
     {
       "backend": "wasm",
       "id": "novelfire",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "ed2180693e2d86630aaace113fdf91ff5e8b9d84091fce86ecb7094624eb1a47",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/novelfire-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "0bbae2f59a58f00a6a586619b7d3e75167d8819d24feb5ae901fb3a1cfcc720c",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/novelfire-1.0.2.mvplug",
+      "version": "1.0.2"
     },
     {
       "backend": "wasm",
       "id": "novelphoenix",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "d363f05ede35da24194a29d524b1908271221e2af920c69c8765164cf0316814",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/novelphoenix-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "96c26ba493d83dcbd0e72950df85bdf6b0a7ea6ddfe1db7111e909f452a1a399",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/novelphoenix-1.0.2.mvplug",
+      "version": "1.0.2"
     },
     {
       "backend": "wasm",
       "id": "readernovel",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "3b7a700e37da2f40f587fcc3a48254b6539dfd42931106711f44d6aec0b97911",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/readernovel-1.0.1.mvplug",
-      "version": "1.0.1"
+      "sha256": "ced6f64220bd57d8aa33f9115fc28b7fe28e6441d062515f29739b080d216bb2",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/readernovel-1.0.2.mvplug",
+      "version": "1.0.2"
     }
   ],
-  "updated_at": "2026-08-27T21:57:27.317896742+00:00"
+  "updated_at": "2026-08-27T22:13:58.444877632+00:00"
 }
