@@ -33,9 +33,9 @@
       "id": "mangabuddy",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "3dc6ce8e40d07531860c0d34ed22b6c159ab69631a2651eedf7de331deec1604",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.2.mvplug",
-      "version": "1.0.2"
+      "sha256": "ce548cd1e3bf0b872e50f146f3b2e92aca0a9809227971b4e0a8693ddc546ff6",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/mangabuddy-1.0.3.mvplug",
+      "version": "1.0.3"
     },
     {
       "backend": "wasm",
@@ -92,5 +92,5 @@
       "version": "1.0.2"
     }
   ],
-  "updated_at": "2026-08-27T22:13:58.444877632+00:00"
+  "updated_at": "2026-08-27T22:30:41.856392379+00:00"
 }
