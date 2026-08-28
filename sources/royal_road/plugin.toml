@@ -1,0 +1,6 @@
+id = "royal_road"
+version = "1.0.0"
+backend = "wasm"
+entrypoint = "royal_road.wasm"
+plugin_api = "1"
+capabilities = []

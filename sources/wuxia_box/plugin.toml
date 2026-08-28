@@ -1,0 +1,6 @@
+id = "wuxia_box"
+version = "1.0.0"
+backend = "wasm"
+entrypoint = "wuxia_box.wasm"
+plugin_api = "1"
+capabilities = []
