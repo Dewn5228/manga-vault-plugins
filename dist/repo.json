@@ -6,9 +6,9 @@
       "id": "freewebnovel",
       "min_app_version": null,
       "plugin_api": "1",
-      "sha256": "d895726500909081e725866a98b12b946805a5e48c3dde03a6c337a89267a9a2",
-      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/freewebnovel-1.0.2.mvplug",
-      "version": "1.0.2"
+      "sha256": "38f3010379d8b269d7482ecd9ba259260e3f8ff680a99f803a35218850a24dde",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/freewebnovel-1.0.3.mvplug",
+      "version": "1.0.3"
     },
     {
       "backend": "wasm",
@@ -101,5 +101,5 @@
       "version": "1.0.0"
     }
   ],
-  "updated_at": "2026-08-28T08:27:24.006655893+00:00"
+  "updated_at": "2026-08-28T08:38:41.123929515+00:00"
 }
