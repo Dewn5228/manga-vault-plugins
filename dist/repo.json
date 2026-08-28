@@ -90,7 +90,16 @@
       "sha256": "ced6f64220bd57d8aa33f9115fc28b7fe28e6441d062515f29739b080d216bb2",
       "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/readernovel-1.0.2.mvplug",
       "version": "1.0.2"
+    },
+    {
+      "backend": "wasm",
+      "id": "wtr_lab",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "3ec6c39d94a1cec7267cc5c90875956b8e37a58b10e149510d197da198232e54",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/wtr_lab-1.0.0.mvplug",
+      "version": "1.0.0"
     }
   ],
-  "updated_at": "2026-08-27T22:36:31.830217901+00:00"
+  "updated_at": "2026-08-28T08:27:24.006655893+00:00"
 }
