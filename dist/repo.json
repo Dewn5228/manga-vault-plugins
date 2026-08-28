@@ -93,13 +93,31 @@
     },
     {
       "backend": "wasm",
+      "id": "royal_road",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "6a9c354fbdcf0d460a47b362201c14c26982f3783d62872b47f437ae53574743",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/royal_road-1.0.0.mvplug",
+      "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
       "id": "wtr_lab",
       "min_app_version": null,
       "plugin_api": "1",
       "sha256": "3ec6c39d94a1cec7267cc5c90875956b8e37a58b10e149510d197da198232e54",
       "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/wtr_lab-1.0.0.mvplug",
       "version": "1.0.0"
+    },
+    {
+      "backend": "wasm",
+      "id": "wuxia_box",
+      "min_app_version": null,
+      "plugin_api": "1",
+      "sha256": "dcc3fe7a42c7ada67bfecef9864921c491dc799ade011ac88dd4a1162ba5dd29",
+      "url": "https://github.com/Dewn5228/manga-vault-plugins/releases/download/latest/wuxia_box-1.0.0.mvplug",
+      "version": "1.0.0"
     }
   ],
-  "updated_at": "2026-08-28T08:38:41.123929515+00:00"
+  "updated_at": "2026-08-28T09:20:59.236299883+00:00"
 }
