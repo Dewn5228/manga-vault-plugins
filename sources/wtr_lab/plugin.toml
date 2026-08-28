@@ -1,0 +1,6 @@
+id = "wtr_lab"
+version = "1.0.0"
+backend = "wasm"
+entrypoint = "wtr_lab.wasm"
+plugin_api = "1"
+capabilities = []
