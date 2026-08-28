@@ -57,7 +57,7 @@ impl Guest for Freewebnovel {
 		SourceInfo {
 			id: "freewebnovel".to_string(),
 			name: "FreeWebNovel".to_string(),
-			version: "1.0.2".to_string(),
+			version: "1.0.3".to_string(),
 			kind: WorkKind::Novel,
 			icon_url: None,
 			referer_url: Some(BASE.to_string()),
@@ -137,8 +137,6 @@ impl Guest for Freewebnovel {
 				.ok_or_else(|| SourceError::Parse("missing chapter page html".into()))?;
 			chapters.extend(parse_chapters(page_html, "a[href*='/chapter-']"));
 		}
-		chapters.reverse();
-
 		Ok(WorkDetails {
 			title,
 			url,
