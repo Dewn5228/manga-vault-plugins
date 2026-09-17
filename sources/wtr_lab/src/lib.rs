@@ -98,6 +98,45 @@ fn chapters(body: &str, url: &str) -> Vec<Chapter> {
 	}).collect()
 }
 
+fn glossary_terms(raw_id: i64) -> Vec<String> {
+	let Ok(body) = get(&format!("{BASE}/api/v2/reader/terms/{raw_id}.json")) else { return Vec::new() };
+	let Ok(value) = serde_json::from_str::<serde_json::Value>(&body) else { return Vec::new() };
+	value["glossaries"]
+		.as_array()
+		.into_iter()
+		.flatten()
+		.filter_map(|glossary| glossary["data"]["terms"].as_array())
+		.flatten()
+		.map(|term| term[0][0].as_str().unwrap_or_default().to_string())
+		.collect()
+}
+
+fn resolve_terms(text: &str, glossary: &[String]) -> String {
+	let chars: Vec<char> = text.chars().collect();
+	let mut out = String::with_capacity(text.len());
+	let mut index = 0;
+	while index < chars.len() {
+		if chars[index] == '※' {
+			let mut end = index + 1;
+			while end < chars.len() && chars[end].is_ascii_digit() {
+				end += 1;
+			}
+			if end > index + 1 && end < chars.len() && (chars[end] == '⛬' || chars[end] == '〓') {
+				let term_index: usize =
+					chars[index + 1..end].iter().collect::<String>().parse().unwrap_or(usize::MAX);
+				if let Some(term) = glossary.get(term_index) {
+					out.push_str(term);
+					index = end + 1;
+					continue;
+				}
+			}
+		}
+		out.push(chars[index]);
+		index += 1;
+	}
+	out
+}
+
 fn decrypt(raw: &str) -> Result<Vec<String>, SourceError> {
 	let array = raw.strip_prefix("arr:").is_some();
 	let raw = raw.strip_prefix("arr:").or_else(|| raw.strip_prefix("str:")).unwrap_or(raw);
@@ -120,7 +159,7 @@ struct WtrLab;
 
 impl Guest for WtrLab {
 	fn get_info() -> SourceInfo {
-		SourceInfo { id: "wtr_lab".into(), name: "WTR-LAB".into(), version: "1.0.0".into(), kind: WorkKind::Novel,
+		SourceInfo { id: "wtr_lab".into(), name: "WTR-LAB".into(), version: "1.0.1".into(), kind: WorkKind::Novel,
 			icon_url: None, referer_url: Some(format!("{BASE}/")), base_url: Some(BASE.into()) }
 	}
 
@@ -156,11 +195,28 @@ impl Guest for WtrLab {
 		let chapter_id = serie["chapter"]["id"].as_i64().ok_or_else(|| SourceError::Parse("missing chapter id".into()))?;
 		let chapter_no = serie["chapter"]["slug"].as_str().or_else(|| serie["chapter"]["name"].as_str()).unwrap_or_default();
 		let raw_id = data["raw_id"].as_i64().ok_or_else(|| SourceError::Parse("missing series id".into()))?;
-		let payload = serde_json::json!({"chapter_id": chapter_id, "chapter_no": chapter_no, "force_retry": "false", "language": "en", "raw_id": raw_id, "retry": "false", "translate": "web"});
+		let payload = serde_json::json!({"chapter_id": chapter_id, "chapter_no": chapter_no, "force_retry": "false", "language": "en", "raw_id": raw_id, "retry": "false", "translate": "ai"});
 		let response = serde_json::from_str::<serde_json::Value>(&post(&format!("{BASE}/api/reader/get"), &payload.to_string())?)
 			.map_err(|e| SourceError::Parse(e.to_string()))?;
-		let encrypted = response["data"]["data"]["body"].as_str().ok_or_else(|| SourceError::Parse("missing chapter body".into()))?;
-		decrypt(encrypted)
+		if response["success"].as_bool() == Some(false) {
+			let message = response["error"].as_str().unwrap_or("chapter request failed");
+			return Err(SourceError::Capability(message.to_string()));
+		}
+		let body = &response["data"]["data"]["body"];
+		let mut paragraphs = match body {
+			serde_json::Value::Array(items) => {
+				items.iter().filter_map(serde_json::Value::as_str).map(str::to_string).collect()
+			},
+			serde_json::Value::String(text) => decrypt(text)?,
+			_ => return Err(SourceError::Parse("missing chapter body".into())),
+		};
+		let glossary = glossary_terms(raw_id);
+		if !glossary.is_empty() {
+			for paragraph in &mut paragraphs {
+				*paragraph = resolve_terms(paragraph, &glossary);
+			}
+		}
+		Ok(paragraphs)
 	}
 }
 
