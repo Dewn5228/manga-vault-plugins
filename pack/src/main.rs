@@ -206,13 +206,7 @@ fn bundle(dir: &Path, manifest: &Manifest) -> Result<Vec<u8>, String> {
 	let mut tar_bytes = Vec::new();
 	{
 		let mut builder = tar::Builder::new(&mut tar_bytes);
-		append_file(&mut builder, dir, &format!("{}/plugin.toml", manifest.id), "plugin.toml")?;
-		append_file(
-			&mut builder,
-			dir,
-			&format!("{}/{}", manifest.id, manifest.entrypoint),
-			&manifest.entrypoint,
-		)?;
+		append_tree(&mut builder, dir, &manifest.id, manifest)?;
 		builder.finish().map_err(|e| e.to_string())?;
 	}
 	let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::default());
@@ -220,11 +214,42 @@ fn bundle(dir: &Path, manifest: &Manifest) -> Result<Vec<u8>, String> {
 	gz.finish().map_err(|e| e.to_string())
 }
 
+fn append_tree(
+	builder: &mut tar::Builder<&mut Vec<u8>>,
+	dir: &Path,
+	prefix: &str,
+	manifest: &Manifest,
+) -> Result<(), String> {
+	let mut entries: Vec<PathBuf> = walk(dir)
+		.filter(|path| path.is_file())
+		.filter(|path| {
+			path.strip_prefix(dir)
+				.ok()
+				.and_then(|relative| relative.components().next())
+				.is_some_and(|component| !component.as_os_str().to_string_lossy().starts_with('.'))
+		})
+		.filter(|path| {
+			let relative = path.strip_prefix(dir).unwrap_or(path);
+			match manifest.backend {
+				Backend::Wasm => relative == Path::new(&manifest.entrypoint),
+				Backend::Lua => relative.extension().is_some_and(|extension| extension == "lua"),
+			}
+		})
+		.collect();
+	entries.sort();
+	for path in entries {
+		let relative = path.strip_prefix(dir).map_err(|e| e.to_string())?;
+		let name = format!("{prefix}/{}", relative.to_string_lossy().replace('\\', "/"));
+		append_file(builder, dir, &name, relative)?;
+	}
+	append_file(builder, dir, &format!("{prefix}/plugin.toml"), Path::new("plugin.toml"))
+}
+
 fn append_file(
 	builder: &mut tar::Builder<&mut Vec<u8>>,
 	dir: &Path,
 	name: &str,
-	relative: &str,
+	relative: &Path,
 ) -> Result<(), String> {
 	let data = std::fs::read(dir.join(relative)).map_err(|e| e.to_string())?;
 	let mut header = tar::Header::new_gnu();
