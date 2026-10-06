@@ -7,4 +7,5 @@ capabilities = []
 
 [limits]
 gap_ms = 1000
+burst = 1
 concurrency = 1
