@@ -4,3 +4,7 @@ backend = "wasm"
 entrypoint = "freewebnovel.wasm"
 plugin_api = "1"
 capabilities = []
+
+[limits]
+gap_ms = 1000
+concurrency = 1
